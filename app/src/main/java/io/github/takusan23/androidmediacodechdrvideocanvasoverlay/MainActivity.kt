@@ -16,12 +16,15 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -64,6 +67,7 @@ private fun HomeScreen() {
 
     val videoUri = remember { mutableStateOf<Uri?>(null) }
     val overlayText = remember { mutableStateOf("10 ビット HDR 動画の編集テスト") }
+    val isSdrToneMapping = remember { mutableStateOf(false) }
     val videoPicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia(),
         onResult = { videoUri.value = it }
@@ -111,7 +115,13 @@ private fun HomeScreen() {
                     bitRate = 20_000_000,
                     keyframeInterval = 1,
                     codecName = MediaFormat.MIMETYPE_VIDEO_HEVC,
-                    tenBitHdrParametersOrNullSdr = VideoEncoder.TenBitHdrParameters(colorStandard, colorTransfer)
+                    tenBitHdrParametersOrNullSdr = if (isSdrToneMapping.value) {
+                        // SDR
+                        null
+                    } else {
+                        // HDR なので色域とガンマカーブを明示的に
+                        VideoEncoder.TenBitHdrParameters(colorStandard, colorTransfer)
+                    }
                 )
             }
 
@@ -120,8 +130,13 @@ private fun HomeScreen() {
                 outputSurface = videoEncoder.getInputSurface(),
                 width = videoWidth,
                 height = videoHeight,
-                // BT.2020 でかつ、HLG か ST2084
-                isEnableTenBitHdr = (colorStandard == MediaFormat.COLOR_STANDARD_BT2020 && (colorTransfer == MediaFormat.COLOR_TRANSFER_HLG || colorTransfer == MediaFormat.COLOR_TRANSFER_ST2084))
+                isEnableTenBitHdr = if (isSdrToneMapping.value) {
+                    // SDR なので
+                    false
+                } else {
+                    // BT.2020 でかつ、HLG か ST2084
+                    (colorStandard == MediaFormat.COLOR_STANDARD_BT2020 && (colorTransfer == MediaFormat.COLOR_TRANSFER_HLG || colorTransfer == MediaFormat.COLOR_TRANSFER_ST2084))
+                }
             ).apply { prepare() }
 
             // 映像を流す SurfaceTexture を作る
@@ -132,7 +147,8 @@ private fun HomeScreen() {
                 prepare(
                     context = context,
                     uri = inputUri,
-                    outputSurface = surfaceTexture.surface
+                    outputSurface = surfaceTexture.surface,
+                    toToneMapSdr = isSdrToneMapping.value
                 )
             }
 
@@ -227,6 +243,11 @@ private fun HomeScreen() {
                 onValueChange = { overlayText.value = it },
                 label = { Text(text = "映像の上に重ねる文字") }
             )
+
+            Row(modifier = Modifier.toggleable(value = isSdrToneMapping.value, onValueChange = { isSdrToneMapping.value = it })) {
+                Text(text = "SDR に変換する（トーンマッピングする）")
+                Switch(checked = isSdrToneMapping.value, onCheckedChange = null)
+            }
 
             if (videoUri.value != null) {
                 Button(onClick = { start() }) {

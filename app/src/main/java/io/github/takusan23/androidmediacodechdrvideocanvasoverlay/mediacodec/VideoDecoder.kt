@@ -20,8 +20,14 @@ class VideoDecoder {
      * @param context [Context]
      * @param uri PhotoPicker 等で選んだやつ
      * @param outputSurface デコードした映像の出力先
+     * @param toToneMapSdr SDR にトーンマッピングする場合は true
      */
-    fun prepare(context: Context, uri: Uri, outputSurface: Surface) {
+    fun prepare(
+        context: Context,
+        uri: Uri,
+        outputSurface: Surface,
+        toToneMapSdr: Boolean = false
+    ) {
         val mediaExtractor = MediaExtractor().apply {
             context.contentResolver.openFileDescriptor(uri, "r")?.use {
                 setDataSource(it.fileDescriptor)
@@ -35,6 +41,11 @@ class VideoDecoder {
             .withIndex()
             .first { it.value.getString(MediaFormat.KEY_MIME)?.startsWith("video/") == true }
         mediaExtractor.selectTrack(trackIndex)
+
+        // SDR に変換する場合は、MediaFormat にオプション指定
+        if (toToneMapSdr) {
+            mediaFormat.setInteger(MediaFormat.KEY_COLOR_TRANSFER_REQUEST, MediaFormat.COLOR_TRANSFER_SDR_VIDEO)
+        }
 
         // MediaCodec を作る
         val codecName = mediaFormat.getString(MediaFormat.KEY_MIME)!!
