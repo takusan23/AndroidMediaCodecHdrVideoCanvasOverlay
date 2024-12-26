@@ -2,11 +2,13 @@ package io.github.takusan23.androidmediacodechdrvideocanvasoverlay.mediacodec
 
 import android.content.Context
 import android.media.MediaCodec
+import android.media.MediaCodecList
 import android.media.MediaExtractor
 import android.media.MediaFormat
 import android.net.Uri
 import android.view.Surface
 import kotlinx.coroutines.yield
+
 
 /** MediaCodec を使って動画をデコードする */
 class VideoDecoder {
@@ -48,11 +50,30 @@ class VideoDecoder {
         }
 
         // MediaCodec を作る
-        val codecName = mediaFormat.getString(MediaFormat.KEY_MIME)!!
+        var codecName = mediaFormat.getString(MediaFormat.KEY_MIME)!!
+
+        // ドルビービジョンの動画で、ドルビービジョンのデコーダーがない場合は HEVC としてデコードさせる
+        // ただ、本物のドルビービジョンは HLG と互換性がないので、HLG と互換性があるドルビービジョンのみ対応できる
+        if (codecName == MediaFormat.MIMETYPE_VIDEO_DOLBY_VISION && !hasDolbyVisionDecoder()) {
+            codecName = MediaFormat.MIMETYPE_VIDEO_HEVC
+        }
+
         decodeMediaCodec = MediaCodec.createDecoderByType(codecName).apply {
             configure(mediaFormat, outputSurface, null, 0)
         }
         decodeMediaCodec?.start()
+    }
+
+    /** ドルビービジョンのデコーダーが存在するか */
+    private fun hasDolbyVisionDecoder(): Boolean {
+        val format = MediaFormat()
+        format.setString(MediaFormat.KEY_MIME, MediaFormat.MIMETYPE_VIDEO_DOLBY_VISION)
+
+        val mediaCodecList = MediaCodecList(MediaCodecList.REGULAR_CODECS)
+        val decoder = mediaCodecList.findDecoderForFormat(format)
+
+        // true if a Dolby Vision decoder is found, false otherwise.
+        return decoder != null
     }
 
     /** 破棄する */
