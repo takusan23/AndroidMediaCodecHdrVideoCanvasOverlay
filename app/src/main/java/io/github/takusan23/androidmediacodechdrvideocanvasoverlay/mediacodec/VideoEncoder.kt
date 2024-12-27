@@ -22,7 +22,7 @@ class VideoEncoder {
      * @param keyframeInterval キーフレームの間隔
      * @param outputVideoWidth 動画の高さ
      * @param outputVideoHeight 動画の幅
-     * @param tenBitHdrParametersOrNullSdr SDR 動画の場合は null。HDR でエンコードする場合は色域とガンマカーブを指定してください。
+     * @param tenBitHdrParametersOrNullSdr SDR 動画の場合は null。HDR でエンコードする場合は色空間とガンマカーブを指定してください。
      */
     fun prepare(
         videoFilePath: String,
@@ -110,19 +110,21 @@ class VideoEncoder {
 
     /**
      * 10Bit HDR の動画を作成するためのパラメーター。
-     * 色域とガンマカーブを指定してください。
+     * 色空間とガンマカーブを指定してください。
      *
-     * HLG 形式の HDR の場合は[MediaFormat.COLOR_STANDARD_BT2020]と[MediaFormat.COLOR_TRANSFER_HLG]。
+     * HLG 形式の HDR の場合は[MediaFormat.COLOR_STANDARD_BT2020]と[MediaFormat.COLOR_TRANSFER_HLG]と[MediaCodecInfo.CodecProfileLevel.HEVCProfileMain10]。
      * デフォルト引数は HLG。
      *
      * 定数自体は Android 7 からありますが、10Bit HDR の動画編集が（MediaCodec が？） 13 以上なので。
      *
-     * @param colorStandard 色域
+     * @param colorStandard 色空間
      * @param colorTransfer ガンマカーブ
+     * @param codecProfile コーデックのプロファイル
      */
     data class TenBitHdrParameters(
         val colorStandard: Int = MediaFormat.COLOR_STANDARD_BT2020,
-        val colorTransfer: Int = MediaFormat.COLOR_TRANSFER_HLG
+        val colorTransfer: Int = MediaFormat.COLOR_TRANSFER_HLG,
+        val codecProfile: Int = MediaCodecInfo.CodecProfileLevel.HEVCProfileMain10
     )
 
     companion object {

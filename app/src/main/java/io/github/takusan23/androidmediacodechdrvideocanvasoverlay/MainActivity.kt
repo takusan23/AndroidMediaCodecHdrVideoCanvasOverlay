@@ -2,6 +2,7 @@ package io.github.takusan23.androidmediacodechdrvideocanvasoverlay
 
 import android.graphics.Color
 import android.graphics.Paint
+import android.media.MediaCodecInfo
 import android.media.MediaFormat
 import android.media.MediaMetadataRetriever
 import android.net.Uri
@@ -88,7 +89,7 @@ private fun HomeScreen() {
                 context.contentResolver.openFileDescriptor(inputUri, "r")?.use {
                     mediaMetadataRetriever.setDataSource(it.fileDescriptor)
                 }
-                // FPS / 色域 / ガンマカーブ
+                // FPS / 色空間 / ガンマカーブ
                 fps = mediaMetadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_CAPTURE_FRAMERATE)?.toIntOrNull() ?: 30
                 colorStandard = mediaMetadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_COLOR_STANDARD)?.toIntOrNull() ?: MediaFormat.COLOR_STANDARD_BT2020
                 colorTransfer = mediaMetadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_COLOR_TRANSFER)?.toIntOrNull() ?: MediaFormat.COLOR_TRANSFER_HLG
@@ -118,10 +119,17 @@ private fun HomeScreen() {
                     tenBitHdrParametersOrNullSdr = if (isSdrToneMapping.value) {
                         // SDR
                         null
-                    } else {
-                        // HDR なので色域とガンマカーブを明示的に
-                        VideoEncoder.TenBitHdrParameters(colorStandard, colorTransfer)
-                    }
+                    } else
+                        // HDR なので色空間とガンマカーブを明示的に
+                        VideoEncoder.TenBitHdrParameters(
+                            colorStandard = colorStandard,
+                            colorTransfer = colorTransfer,
+                            codecProfile = when (colorTransfer) {
+                                MediaFormat.COLOR_TRANSFER_HLG -> MediaCodecInfo.CodecProfileLevel.HEVCProfileMain10
+                                MediaFormat.COLOR_TRANSFER_ST2084 -> MediaCodecInfo.CodecProfileLevel.HEVCProfileMain10HDR10
+                                else -> -1 // ココには来ないはず
+                            }
+                        )
                 )
             }
 
