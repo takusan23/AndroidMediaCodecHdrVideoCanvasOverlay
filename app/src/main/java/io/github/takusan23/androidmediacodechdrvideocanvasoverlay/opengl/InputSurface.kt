@@ -23,7 +23,7 @@ class InputSurface(
 
     init {
         // 10-bit HDR のためには HLG の表示が必要。
-        // それには OpenGL ES 3.0 でセットアップし、10Bit に設定する必要がある。
+        // それには OpenGL ES 3.0 でセットアップし、10-bit に設定する必要がある。
         if (isEnableTenBitHdr) {
             eglSetupForTenBitHdr()
         } else {
