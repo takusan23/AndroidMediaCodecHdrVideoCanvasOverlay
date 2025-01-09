@@ -1,5 +1,8 @@
 # AndroidMediaCodecHdrVideoCanvasOverlay
 
+# ブログ記事
+https://takusan.negitoro.dev/posts/android_hdr_camera_video_editor/
+
 # らいせんす
 OpenGLまわりはcamera2サンプルアプリどおりです、、
 
